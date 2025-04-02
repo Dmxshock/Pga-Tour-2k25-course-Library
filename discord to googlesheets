@@ -1,0 +1,81 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const { google } = require("googleapis");
+const credentials = require("./credentials.json"); // Your Google API credentials
+
+const app = express();
+app.use(bodyParser.json());
+
+// Authenticate with Google Sheets API
+const authorizeGoogleSheets = () => {
+  const { client_email, private_key } = credentials;
+  const jwtClient = new google.auth.JWT(
+    client_email,
+    null,
+    private_key,
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  );
+  return jwtClient;
+};
+
+// Append data to Google Sheets
+const appendToSheet = async (data) => {
+  const spreadsheetId = "YOUR_SPREADSHEET_ID"; // Replace with your Google Sheets ID
+  const sheetName = "Sheet1"; // Replace with your sheet name, if necessary
+  const auth = authorizeGoogleSheets();
+
+  const sheets = google.sheets({ version: "v4", auth });
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${sheetName}!A1`, // Adjust range if needed
+    valueInputOption: "RAW",
+    resource: {
+      values: [
+        [
+          data.date,
+          data.course,
+          data.designerName,
+          data.tees,
+          data.pins,
+          data.difficulty,
+          data.comments,
+          data.rating,
+        ],
+      ],
+    },
+  });
+};
+
+// Endpoint to receive data from Discord webhook
+app.post("/webhook", async (req, res) => {
+  try {
+    const { date, course, designerName, tees, pins, difficulty, comments, rating } = req.body;
+
+    // Process the incoming data
+    const processedData = {
+      date: date || "N/A",
+      course: course || "N/A",
+      designerName: designerName || "N/A",
+      tees: tees || "N/A",
+      pins: pins || "N/A",
+      difficulty: difficulty || "N/A",
+      comments: comments || "N/A",
+      rating: rating || "N/A",
+    };
+
+    // Append the data to Google Sheets
+    await appendToSheet(processedData);
+
+    res.status(200).send("Data added successfully!");
+  } catch (error) {
+    console.error("Error processing webhook data:", error);
+    res.status(500).send("An error occurred");
+  }
+});
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
