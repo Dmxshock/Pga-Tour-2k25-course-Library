@@ -1,3 +1,20 @@
+const { google } = require('googleapis');
+const OAuth2 = google.auth.OAuth2;
+
+const oauth2Client = new OAuth2(
+    '1071547508611-23f93ouruj0b8ta5ej53m15gh67sog9r.apps.googleusercontent.com',
+    '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',
+    'http://localhost
+'
+);
+
+oauth2Client.setCredentials({
+    access_token: 'YOUR_ACCESS_TOKEN',
+    refresh_token: 'YOUR_REFRESH_TOKEN',
+});
+
+const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
